@@ -49,11 +49,14 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -hostname=${h
 done
 ~~~
 
-*Quick Verify for Common Names
+* Quick Verify for Common Names
 ~~~
 openssl x509 -noout -subject -in k8hw2.pem
 ~~~
 ----------------------------------
+
+* Create kube-proxy certificate
+
 ~~~
 cat > kube-proxy-csr.json <<EOF
 {"CN": "system:kube-proxy","key": {"algo": "rsa","size": 2048},"names": [{"O": "system:node-proxier"}]}
@@ -65,6 +68,8 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kube
 ~~~
 
 -----------------------------------
+
+* Create Server API certificate
 
 ~~~
 cat > kubernetes-csr.json <<EOF
@@ -78,6 +83,9 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -hostname=${K
 ~~~
 
 -----------------------------------
+
+* Distribute node certificates y public CA to nodes 
+
 ~~~
 for host in k8hw2 k8hw3 k8hw4; do scp -q ca.pem ${host}-key.pem ${host}.pem ${host}:~/; done
 ~~~
