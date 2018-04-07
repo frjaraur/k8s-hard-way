@@ -41,6 +41,12 @@ enable_ssh_with_password_for_maintenance_jobs = <<SCRIPT
   systemctl restart ssh
 SCRIPT
 
+install_certificate_tools = <<SCRIPT
+  curl -o /usr/local/bin/cfssl -sSL https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 
+  curl -o /usr/local/bin/cfssljson -sSL https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+  chmod +x /usr/local/bin/cfssl* 
+SCRIPT
+
 
 $install_docker_engine = <<SCRIPT
   #curl -sSk $1 | sh
@@ -79,22 +85,23 @@ SCRIPT
 
 
 install_kubernetes_master_binaries = <<SCRIPT
+  echo "K8s Master Binaries URL #{k8s_release_url}"
+  curl -o /usr/local/bin/kube-apiserver -sSL #{k8s_release_url}/kube-apiserver
+  curl -o /usr/local/bin/kube-controller-manager -sSL #{k8s_release_url}/kube-controller-manager
+  curl -o /usr/local/bin/kube-scheduler -sSL #{k8s_release_url}/kube-scheduler
+  curl -o /usr/local/bin/kubectl -sSL #{k8s_release_url}/kubectl
 
-curl -sSL -o /usr/local/bin/kube-apiserver "#{k8s_release_url}/kube-apiserver"
-curl -sSL -o /usr/local/bin/kube-controller-manager "#{k8s_release_url}/kube-controller-manager"
-curl -sSL -o /usr/local/bin/kube-scheduler "#{k8s_release_url}/kube-scheduler"
-curl -sSL -o /usr/local/bin/kubectl "#{k8s_release_url}/kubectl"
-
-chmod +x /usr/local/bin/kube*
-mkdir -p /var/lib/kubernetes/
+  chmod +x /usr/local/bin/kube*
+  mkdir -p /var/lib/kubernetes/
 
 SCRIPT
 
 install_kubernetes_worker_binaries = <<SCRIPT
 apt-get -qq install socat
-curl -sSL -o /usr/local/bin/kube-proxy "#{k8s_release_url}/kube-proxy"
-curl -sSL -o /usr/local/bin/kubelet "#{k8s_release_url}/kubelet"
-curl -sSL -o /usr/local/bin/kubectl "#{k8s_release_url}/kubectl"
+echo "K8s Workers Binaries URL  #{k8s_release_url}"
+curl -o /usr/local/bin/kube-proxy -sSL #{k8s_release_url}/kube-proxy
+curl -o /usr/local/bin/kubelet -sSL #{k8s_release_url}/kubelet
+curl -o /usr/local/bin/kubectl -sSL #{k8s_release_url}/kubectl
 
 chmod +x /usr/local/bin/kube*
 mkdir -p \
@@ -178,6 +185,7 @@ Vagrant.configure(2) do |config|
 
       config.vm.provision :shell, :inline => update_hosts
       config.vm.provision :shell, :inline => disable_swap
+      config.vm.provision :shell, :inline => enable_ssh_with_password_for_maintenance_jobs
 
       config.vm.provision "shell", inline: <<-SHELL
         sudo cp -R /src ~vagrant
@@ -208,17 +216,18 @@ Vagrant.configure(2) do |config|
       end
 
       ## INSTALLDOCKER --> on script because we can reprovision
-      config.vm.provision "shell" do |s|
-     		s.name       = "Install Docker Engine version "+engine_version
-        s.inline     = $install_docker_engine
-        s.args       = engine_version
-      end
+      # config.vm.provision "shell" do |s|
+     	# 	s.name       = "Install Docker Engine version "+engine_version
+      #   s.inline     = $install_docker_engine
+      #   s.args       = engine_version
+      # end
       
 
       if node['role'] == "manager"
+        config.vm.provision :shell, :inline => install_certificate_tools
         config.vm.provision :shell, :inline => install_kubernetes_master_binaries
       end
-      if node['role'] == "worker"      
+      if node['role'] == "worker"
         config.vm.provision :shell, :inline => install_kubernetes_worker_binaries
       end
 
