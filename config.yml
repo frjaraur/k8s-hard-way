@@ -1,0 +1,43 @@
+environment:
+  domain: "dockerlab.local"
+  masterip: "10.10.10.11"
+  base_box: "ubuntu/xenial64"
+  engine_version: "17.03.2~ce-0~ubuntu-xenial"
+  k8s_release_url: "https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/"
+  
+boxes:
+- name: "k8hw-1"
+  role: "manager"
+  mgmt_ip: "10.10.10.11"
+  hostonly_ip: "192.168.56.11"
+  mem: "2048"
+  cpu: "2"
+
+- name: "k8hw-2"
+  role: "worker"
+  mgmt_ip: "10.10.10.12"
+  hostonly_ip: "192.168.56.12"
+  mem: "1524"
+  cpu: "2"
+
+- name: "k8hw-3"
+  role: "worker"
+  mgmt_ip: "10.10.10.13"
+  hostonly_ip: "192.168.56.13"
+  mem: "1524"
+  cpu: "2"
+
+- name: "k8hw-4"
+  role: "worker"
+  mgmt_ip: "10.10.10.14"
+  hostonly_ip: "192.168.56.14"
+  mem: "1524"
+  cpu: "2"
+
+  #- name: "k8hw-client"
+  #role: "client"
+  #mgmt_ip: "10.10.10.15"
+  #hostonly_ip: "192.168.56.15"
+  #mem: "1024"
+  #cpu: "1"
+
