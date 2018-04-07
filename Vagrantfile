@@ -83,6 +83,18 @@ $install_docker_engine = <<SCRIPT
   systemctl start docker
 SCRIPT
 
+install_etcd = <<SCRIPT
+    curl -o /tmp/etcd.tar.gz -sSL "https://github.com/coreos/etcd/releases/download/v3.2.11/etcd-v3.2.11-linux-amd64.tar.gz"
+    mkdir /tmp/etcd
+    tar -zxvf /tmp/etcd.tar.gz --strip 1 -C /tmp/etcd
+    cp -p /tmp/etcd/etcd /usr/local/bin
+    mkdir -p /etc/etcd /var/lib/etcd
+    cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
+    ETCD_NAME="$(hostname -s)"
+    ETCD_IP="$(hostname -i)"
+    sed -i "s/ETCD_NAME/${ETCD_NAME}/g" /etc/systemd/system/etcd.service
+    sed -i "s/ETCD_IP/${ETCD_IP}/g" /etc/systemd/system/etcd.service
+SCRIPT
 
 install_kubernetes_master_binaries = <<SCRIPT
   echo "K8s Master Binaries URL #{k8s_release_url}"
@@ -226,6 +238,9 @@ Vagrant.configure(2) do |config|
       if node['role'] == "manager"
         config.vm.provision :shell, :inline => install_certificate_tools
         config.vm.provision :shell, :inline => install_kubernetes_master_binaries
+        config.vm.provision :shell, :inline => install_etcd
+        config.vm.provision "file", source: "templates/etcd.service", destination: "/etc/systemd/system/etcd.service"
+
       end
       if node['role'] == "worker"
         config.vm.provision :shell, :inline => install_kubernetes_worker_binaries
